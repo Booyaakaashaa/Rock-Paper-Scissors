@@ -12,26 +12,57 @@ class RPSTest(StageTest):
         self.wins = 0
         self.draws = 0
         self.loses = 0
+        self.file_name = 'rating.txt'
+        self.start_score = 350
+        self.user_name = 'Bob'
 
     def generate(self) -> List[TestCase]:
-        valid_input_cases = ["rock\npaper\nscissors\npaper\nscissors\nrock\npaper\nscissors\n!exit",
-                             "scissors\nscissors\nscissors\n!exit"]
-        invalid_input_cases = ["rock\npaper\npaper\nscissors\nblabla\n!exit",
-                               "rock\ninvalid\n!exit",
-                               "rock\nrock\nrock\nrock-n-roll\n!exit"]
+        valid_input_cases = ["{}\nrock\npaper\nscissors\npaper\nscissors\nrock\npaper\nscissors\n!exit".format(self.user_name),
+                             "{}\nscissors\nscissors\nscissors\n!exit".format(self.user_name)]
+        invalid_input_cases = ["{}\nrock\npaper\npaper\nscissors\nblabla\n!exit".format(self.user_name),
+                               "{}\nrock\ninvalid\n!exit".format(self.user_name),
+                               "{}\nrock\nrock\nrock\nrock-n-roll\n!exit".format(self.user_name)]
         tests = list()
-        # Cases that checks multiple input
-        [tests.append(TestCase(stdin=inp, attach=len(inp.split('\n')) - 1, check_function=self.check_valid_inputs)) for
-         inp in valid_input_cases]
+        # Cases that check multiple input
+        [tests.append(
+            TestCase(
+                stdin=inp,
+                attach=len(inp.split('\n')) - 2,
+                check_function=self.check_valid_inputs,
+                files={self.file_name: '{0} {1}\nJane 200\nAlex 400'.format(self.user_name, self.start_score)}
+            )
+        ) for inp in valid_input_cases]
         # Cases that check invalid input
-        [tests.append(TestCase(stdin=inp, check_function=self.check_invalid_input)) for inp in invalid_input_cases]
-        # Cases that check using random module
-        long_input = ''
+        [tests.append(
+            TestCase(
+                stdin=inp,
+                check_function=self.check_invalid_input,
+                files={self.file_name: '{0} {1}\nJane 200\nAlex 400'.format(self.user_name, self.start_score)}
+            )
+        ) for inp in invalid_input_cases]
+        # Case that checks using random module
+        long_input = '{}\n'.format(self.user_name)
         for _ in range(100):
             long_input += 'rock\n'
         long_input += '!exit'
-        tests.append(TestCase(stdin=long_input, attach='rock', check_function=self.check_results))
-
+        tests.append(
+            TestCase(
+                stdin=long_input,
+                attach='rock',
+                check_function=self.check_results,
+                files={self.file_name: '{0} {1}\nJane 200\nAlex 400'.format(self.user_name, self.start_score)}
+            ))
+        # Case that checks prints in file
+        temp = long_input.split('\n')
+        temp[-2] = '!rating'
+        long_input = '\n'.join(temp)
+        tests.append(
+            TestCase(
+                stdin=long_input,
+                attach='rock',
+                check_function=self.check_file,
+                files={self.file_name: '{0} {1}\nJane 200\nAlex 400'.format(self.user_name, self.start_score)}
+            ))
         return tests
 
     @staticmethod
@@ -50,13 +81,37 @@ class RPSTest(StageTest):
         if results != attach:
             return CheckResult.wrong('Not enough results of the games were printed!\n'
                                      'Tried to input {} actions and got {} results of the games.\n'
-                                     'Perhaps your program did not run enough games. Is it set up correctly to loop until the user inputs ‘!exit’?'
-                                     'Also, make sure you print the result  of the game in the correct format after each valid input!'
+                                     'Perhaps your program did not run enough games. Is your program set up correctly to loop until the user inputs ‘!exit’?\n'
+                                     'Also, make sure you print the result of the game in the correct format after each valid input!'
                                      .format(attach, results))
         return CheckResult.correct()
 
-    def check_results(self, reply: str, attach) -> CheckResult:
+    def check_results(self, reply: str, ignored) -> CheckResult:
 
+        self.wins = reply.lower().count('well done')
+        self.draws = reply.lower().count('draw')
+        self.loses = reply.lower().count('sorry')
+
+        wrong_randomize = CheckResult.wrong("The results of the games: {} wins, {} draws and {} loses\n"
+                                            "The game is too easy to win. Is the computer being too predictable? The number of wins, draws and loses should be approximately the same.\n"
+                                            "Perhaps you don't use the random module to choose random option.\n"
+                                            "Also, make sure you output the results of the games the same way as in the examples!\n"
+                                            "If you are sure that you use the random module, try to rerun the tests!\n"
+                                            .format(self.wins, self.draws, self.loses))
+        if self.loses < 20:
+            return wrong_randomize
+        if self.draws < 20:
+            return wrong_randomize
+        if self.wins < 20:
+            return wrong_randomize
+
+        return CheckResult.correct()
+
+    def check_file(self, reply: str, ignored) -> CheckResult:
+        if "enter your name" not in reply.lower():
+            return CheckResult.wrong("Seems like you did not offer the user to input their name. Your program should output \"Enter your name:\" before the start of the game.\n")
+        if 'hello, {}'.format(self.user_name).lower() not in reply.lower():
+            return CheckResult.wrong("Seems like you did not greet the user. Your program should output \"Hello, <user_name>\"\n")
         for line in reply.split('\n'):
             lower_line = line.lower()
             if 'well done' in lower_line and 'scissors' not in lower_line:
@@ -64,7 +119,7 @@ class RPSTest(StageTest):
                     'Wrong result of the game:\n> rock\n{}\nRock can only beat scissors!'.format(line))
             elif 'draw' in lower_line and 'rock' not in lower_line:
                 return CheckResult.wrong(
-                    'Wrong result of the game:\n> rock\n{}\nThe game ends with a draw only when the user and the computer both choose the same option'.format(
+                    'Wrong result of the game:\n> rock\n{}\nThe game ends with a draw only when user option and computer choose the same option'.format(
                         line))
             elif 'sorry' in lower_line and 'paper' not in lower_line:
                 return CheckResult.wrong(
@@ -74,18 +129,13 @@ class RPSTest(StageTest):
         self.draws = reply.lower().count('draw')
         self.loses = reply.lower().count('sorry')
 
-        wrong_randomize = CheckResult.wrong("The results of the games: {} wins, {} draws and {} loses\n"
-                                            "The game is too easy to win. Is the computer being too predictable? The number of wins, draws and loses should be approximately the same.\n"
-                                            "Perhaps you don't use the random module to choose random option.\n"
-                                            "Also, make sure you output the results of the games the same way as was stated in the examples!\n"
-                                            "If you are sure that you use the random module, try to rerun the tests!\n"
-                                            .format(self.wins, self.draws, self.loses))
-        if self.loses < 20:
-            return wrong_randomize
-        if self.draws < 20:
-            return wrong_randomize
-        if self.wins < 20:
-            return wrong_randomize
+        correct_points = self.start_score + self.wins * 100 + self.draws * 50
+
+        if str(correct_points) not in reply:
+            return CheckResult.wrong('Looks like you incorrectly calculated the player\'s score!\n'
+                                     'Make sure that you took into account the user\'s initial score written in the file.\n'
+                                     'For each draw, add 50 point to the score. For each user\'s win, add 100 to his/her score.\n'
+                                     'In case the user loses, don\'t change the score. ')
 
         return CheckResult.correct()
 
