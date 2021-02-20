@@ -1,4 +1,3 @@
-# Write your code here
 import random
 name = input("Enter your name: ")
 print(f"Hello, {name}")
