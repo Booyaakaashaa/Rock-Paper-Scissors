@@ -4,14 +4,14 @@ print(f"Hello, {name}")
 ratings = open('rating.txt', 'r')
 score = 0
 rps = input().strip().split(",")
-if rps[0] == " ":
+if rps[0] == "":
     rps = ['rock', 'paper', 'scissors']
 print(rps)
 for line in ratings:
     line = line.strip().split()
     if line[0] == name:
         score = int(line[1])
-game = ['rock', 'fire', 'scissors', 'snake', 'human', 'tree', 'wolf', 'sponge', 'paper', 'air', 'water', 'dragon' 'devil', 'lightning', 'gun']
+game = ['rock', 'fire', 'scissors', 'snake', 'human', 'tree', 'wolf', 'sponge', 'paper', 'air', 'water', 'dragon', 'devil', 'lightning', 'gun']
 print("Okay, let's start")
 while 1:
     user = input()
@@ -159,38 +159,4 @@ while 1:
             score += 100
     else:
         print('Invalid input')
-
-    """if opt == 'rock':
-        if user == 'rock':
-            print('There is a draw (rock)')
-            score += 50
-        elif user in ['scissors', 'snake', 'human', 'tree', 'wolf', 'sponge']:
-            print('Sorry, but the computer chose rock')
-        elif user == ['paper', 'air', 'water', 'dragon', 'devil', 'lightning']:
-            print('Well done. The computer chose rock and failed')
-            score += 100
-        else:
-            print('Invalid input')
-    elif opt == 'scissors':
-        if user == 'scissors':
-            print('There is a draw (scissors)')
-            score += 50
-        elif user == [paper, sponge, wolf, tree, human, snake, air]:
-            print('Sorry, but the computer chose scissors')
-        elif user == [rock, fire, gun, lightning, devil, dragon, water]:
-            print('Well done. The computer chose scissors and failed')
-            score += 100
-        else:
-            print('Invalid input')
-    elif opt == 'paper':
-        if user == 'paper':
-            print('There is a draw (paper)')
-            score += 50
-        elif user == [rock, ]:
-            print('Sorry, but the computer chose paper')
-        elif user == 'scissors':
-            print('Well done. The computer chose paper and failed')
-            score += 100
-        else:
-            print('Invalid input')
-"""
+ratings.close()
